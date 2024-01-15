@@ -1,0 +1,9 @@
+#!/bin/bash
+
+bin/magento cache:flush
+bin/magento cache:clean
+bin/magento setup:upgrade
+bin/magento setup:di:compile
+bin/magento indexer:reindex
+bin/magento setup:static-content:deploy -f
+composer dump-autoload

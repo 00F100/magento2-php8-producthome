@@ -1,0 +1,11 @@
+#!/bin/bash
+
+docker compose up mysql -d
+echo "Waiting MySQL..."
+while [ "$(docker inspect --format='{{.State.Health.Status}}' mysql)" != "healthy" ]; do
+    printf "."
+    sleep 10
+done
+echo "MySQL done!"
+docker cp ./magento.sql mysql:/magento.sql
+docker exec -it mysql bash -c "mysql -h127.0.0.1 -uroot -proot magento < magento.sql"

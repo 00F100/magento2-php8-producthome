@@ -1,0 +1,5 @@
+#!/bin/bash
+
+sudo sed -i '/127.0.0.1 magento2.docker/d' /etc/hosts
+echo "127.0.0.1 magento2.docker" | sudo tee -a /etc/hosts > /dev/null
+docker compose up web -d

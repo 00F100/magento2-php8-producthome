@@ -1,0 +1,4 @@
+#!/bin/bash
+
+docker compose down
+docker volume rm magento2-php8-producthome_db-data

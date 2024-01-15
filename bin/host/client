@@ -1,0 +1,4 @@
+#!/bin/bash
+
+docker compose build client
+docker compose run --rm client

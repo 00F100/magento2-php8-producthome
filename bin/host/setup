@@ -1,0 +1,7 @@
+#!/bin/bash
+
+sudo sed -i '/127.0.0.1 magento2.docker/d' /etc/hosts
+echo "127.0.0.1 magento2.docker" | sudo tee -a /etc/hosts > /dev/null
+
+docker compose build client
+docker compose run --rm --entrypoint=/bin/bash --workdir=/var/www/html/magento2-ce client ../bin/container/setup

@@ -1,0 +1,33 @@
+#!/bin/bash
+
+bin/magento setup:install \
+    --base-url=http://magento2.docker \
+    --backend-frontname="admin" \
+    --db-host=mysql \
+    --db-name=magento \
+    --db-user=root \
+    --db-password=root \
+    --admin-firstname=Admin \
+    --admin-lastname=Admin \
+    --admin-email=email@example.com \
+    --admin-user=admin \
+    --admin-password=admin123@A \
+    --language=en_US \
+    --currency=USD \
+    --timezone=America/New_York \
+    --use-rewrites=1 \
+    --use-secure 0 \
+    --use-secure-admin 0 \
+    --opensearch-host opensearch \
+    --opensearch-port 9200
+
+bin/magento module:disable Magento_AdminAdobeImsTwoFactorAuth
+bin/magento module:disable Magento_TwoFactorAuth
+bin/magento sampledata:deploy
+bin/magento cache:flush
+bin/magento cache:clean
+bin/magento setup:upgrade
+bin/magento setup:di:compile
+bin/magento indexer:reindex
+bin/magento setup:static-content:deploy -f
+composer dump-autoload

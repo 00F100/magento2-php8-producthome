@@ -1,0 +1,145 @@
+services:
+    client:
+      image: local-dev
+      build:
+        context: .
+      environment:
+        - COMPOSER_MEMORY_LIMIT=-1
+        - PHP_MEMORY_LIMIT=-1
+      volumes:
+        - ${PWD}:/var/www/html
+        - ${PWD}/php/php.ini:/usr/local/etc/php/php.ini
+        - ${PWD}/.composer:/var/www/.composer
+      networks:
+        - locanet
+      links:
+        - mysql
+        - opensearch
+      depends_on:
+        mysql:
+          condition: service_healthy
+        phpmyadmin:
+          condition: service_healthy
+        opensearch:
+          condition: service_healthy
+    web:
+      hostname: magento2.docker
+      image: local-dev
+      build:
+        context: .
+      container_name: web
+      restart: always
+      command: apache2-foreground
+      environment:
+        - PHP_DATE_TIMEZONE=EST
+        - PHP_DISPLAY_ERRORS=1
+        - PHP_MEMORY_LIMIT=-1
+        - PHP_MAX_EXECUTION_TIME=300
+        - PHP_POST_MAX_SIZE=500M
+        - PHP_UPLOAD_MAX_FILESIZE=1024M
+        - COMPOSER_MEMORY_LIMIT=-1
+      volumes:
+        - ${PWD}/magento2-ce:/var/www/html
+        - ${PWD}/apache2/magento.docker.conf:/etc/apache2/sites-available/000-default.conf
+        - ${PWD}/php/php.ini:/usr/local/etc/php/php.ini
+      ports:
+        - "80:80"
+        - "443:443"
+        - "32823:22"
+      links:
+        - mysql
+        - opensearch
+      depends_on:
+        mysql:
+          condition: service_healthy
+        phpmyadmin:
+          condition: service_healthy
+        opensearch:
+          condition: service_healthy
+      networks:
+        locanet:
+          aliases:
+            - magento2.docker
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://magento2.docker"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+    mysql:
+      hostname: mysql
+      image: mariadb:10.6
+      container_name: mysql
+      restart: always
+      ports:
+        - "3306:3306"
+      environment:
+        - MYSQL_ROOT_PASSWORD=root
+        - MYSQL_DATABASE=magento
+      volumes:
+        - db-data:/var/lib/mysql
+      networks:
+        locanet:
+          aliases:
+            - mysql
+      healthcheck:
+        test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--password=root"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+    opensearch:
+      hostname: opensearch
+      image: magento/magento-cloud-docker-opensearch:2.4-1.3.5
+      container_name: opensearch
+      ulimits:
+        memlock:
+          soft: -1
+          hard: -1
+      environment:
+        - cluster.name=docker-cluster
+        - discovery.type=single-node
+        - discovery.seed_hosts=opensearch
+        - bootstrap.memory_lock=true
+        - DISABLE_SECURITY_PLUGIN=true
+      ports:
+        - "9200:9200"
+        - "9300:9300"
+        - "9650:9650"
+      networks:
+        locanet:
+          aliases:
+            - opensearch
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:9200"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+    phpmyadmin:
+      container_name: phpmyadmin
+      restart: always
+      image: phpmyadmin/phpmyadmin:latest
+      environment:
+        - MYSQL_ROOT_PASSWORD=root
+        - PMA_USER=root
+        - PMA_PASSWORD=root
+      ports:
+        - "8080:80"
+      links:
+        - mysql:db
+      depends_on:
+        mysql:
+          condition: service_healthy
+      networks:
+        - locanet
+      healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+
+networks:
+  locanet:
+    driver: bridge
+
+volumes:
+  db-data:
+    external: false
